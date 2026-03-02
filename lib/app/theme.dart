@@ -1,0 +1,116 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class AppTheme {
+  // Brand Colors from Figma Design
+  static const Color primaryPurple = Color(0xFF9147FF);
+  static const Color accentPurple = Color(0xFFE5D5FF); // Light/Unselected
+  static const Color textMain = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF757575);
+
+  // Category Palette from Dashboard Cards
+  static const Color categoryProject = Color(0xFFADC2FF); // Blue
+  static const Color categoryWork = Color(0xFFD1F1E9); // Mint
+  static const Color categoryDaily = Color(0xFFC7A2FF); // Purple
+  static const Color categoryGrocery = Color(0xFFF1D9B5); // Peach
+
+  static ThemeData get themeData {
+    final baseTextTheme = GoogleFonts.outfitTextTheme();
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryPurple,
+        primary: primaryPurple,
+        onPrimary: Colors.white,
+        surface: Colors.white,
+      ),
+      scaffoldBackgroundColor:
+          Colors.transparent, // Always transparent for BG image
+
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: GoogleFonts.outfit(
+          fontWeight: FontWeight.bold,
+          color: textMain,
+          fontSize: 32,
+        ),
+        titleLarge: GoogleFonts.outfit(
+          fontWeight: FontWeight.bold,
+          color: textMain,
+          fontSize: 22,
+        ),
+        bodyLarge: GoogleFonts.outfit(
+          color: textMain,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyMedium: GoogleFonts.outfit(color: textSecondary, fontSize: 14),
+      ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryPurple,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 60),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          elevation: 0,
+        ),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryPurple, width: 1.5),
+        ),
+        hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400),
+      ),
+
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.grey.shade100),
+        ),
+      ),
+
+      chipTheme: ChipThemeData(
+        backgroundColor: accentPurple,
+        selectedColor: primaryPurple,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        labelStyle: GoogleFonts.outfit(
+          color: textMain,
+          fontWeight: FontWeight.w600,
+        ),
+        secondaryLabelStyle: GoogleFonts.outfit(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        showCheckmark: false,
+        side: BorderSide.none,
+      ),
+    );
+  }
+}
