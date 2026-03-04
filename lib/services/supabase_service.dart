@@ -13,10 +13,25 @@ class SupabaseService {
     return response.map((json) => Task.fromJson(json)).toList();
   }
 
-  Future<void> createTask(String userId, String title) async {
+  Future<void> createTask(
+    String userId,
+    String title, {
+    String? description,
+    String? category,
+    String? priority,
+    String? startTime,
+    String? endTime,
+    String? date,
+  }) async {
     await supabase.from('tasks').insert({
       'user_id': userId,
       'title': title,
+      'description': description,
+      'category': category,
+      'priority': priority,
+      'start_time': startTime,
+      'end_time': endTime,
+      'date': date,
     });
   }
 
@@ -25,7 +40,8 @@ class SupabaseService {
   }
 
   Future<void> toggleTask(String taskId, bool isCompleted) async {
-    await supabase.from('tasks')
+    await supabase
+        .from('tasks')
         .update({'is_completed': isCompleted})
         .eq('id', taskId);
   }

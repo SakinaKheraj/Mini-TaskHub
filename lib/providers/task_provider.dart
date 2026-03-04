@@ -24,8 +24,26 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addTask(String title, String userId) async {
-    await _supabaseService.createTask(userId, title);
+  Future<void> addTask(
+    String userId,
+    String title, {
+    String? description,
+    String? category,
+    String? priority,
+    String? startTime,
+    String? endTime,
+    String? date,
+  }) async {
+    await _supabaseService.createTask(
+      userId,
+      title,
+      description: description,
+      category: category,
+      priority: priority,
+      startTime: startTime,
+      endTime: endTime,
+      date: date,
+    );
     await loadTasks(userId);
   }
 
@@ -34,7 +52,11 @@ class TaskProvider with ChangeNotifier {
     await loadTasks(userId);
   }
 
-  Future<void> toggleTask(String taskId, bool isCompleted, String userId) async {
+  Future<void> toggleTask(
+    String taskId,
+    bool isCompleted,
+    String userId,
+  ) async {
     await _supabaseService.toggleTask(taskId, isCompleted);
     await loadTasks(userId);
   }

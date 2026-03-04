@@ -4,10 +4,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthService extends ChangeNotifier {
   final supabase = Supabase.instance.client;
   User? _user;
-  User? get currentUser => _user;
+  User? get currentUser => _user ?? supabase.auth.currentUser;
+
+  AuthService() {
+    _init();
+  }
+
+  void _init() {
+    _user = supabase.auth.currentUser;
+    supabase.auth.onAuthStateChange.listen((data) {
+      _user = data.session?.user;
+      notifyListeners();
+    });
+  }
 
   Stream<User?> get authStateChanges =>
-      supabase.auth.onAuthStateChange.map((data) => data.session?.user ?? null);
+      supabase.auth.onAuthStateChange.map((data) => data.session?.user);
 
   Future<User?> signIn(String email, String password) async {
     try {

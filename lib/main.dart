@@ -10,25 +10,24 @@ import 'dashboard/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await dotenv.load(fileName: ".env");
-  
+
   final String url = dotenv.env['SUPABASE_URL']!.trim();
   final String anonKey = dotenv.env['SUPABASE_ANON_KEY']!.trim();
-  
-  await Supabase.initialize(
-    url: url,
-    anonKey: anonKey,
-  );
-  
+
+  await Supabase.initialize(url: url, anonKey: anonKey);
+
   // TEST CONNECTION
   try {
-    final response = await Supabase.instance.client.from('tasks').select('count');
+    final response = await Supabase.instance.client
+        .from('tasks')
+        .select('count');
     debugPrint(" Supabase connected: $response");
   } catch (e) {
     debugPrint(" Supabase test failed: $e");
   }
-  
+
   runApp(MyApp());
 }
 
@@ -57,11 +56,12 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, authService, _) {
         return StreamBuilder<User?>(
           stream: authService.authStateChanges,
+          initialData: authService.currentUser,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(body: Center(child: CircularProgressIndicator()));
-            }
-            return snapshot.data != null ? DashboardScreen() : LoginScreen();
+            // No need for waiting state if we have initialData
+            return snapshot.data != null
+                ? const DashboardScreen()
+                : const LoginScreen();
           },
         );
       },
