@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'auth_service.dart';
 import '../utils/validators.dart';
 
+/// The onboarding screen for new users.
+/// Pairs well with the LoginScreen's glassmorphic theme.
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -18,12 +20,17 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
+  /// Validates input and creates a new account via Supabase.
   void _signup() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Manual check for password matching
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      }
       return;
     }
 
@@ -36,28 +43,28 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification email sent! Please check your inbox.'),
-          ),
-        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Signup failed: ${e.toString()}')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Signup failed: ${e.toString()}')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          _buildBackground(),
+          _buildBackground(isDarkMode),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -70,7 +77,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const Icon(Icons.hive, size: 28, color: Colors.black),
+                        Icon(Icons.hive, size: 28, color: textColor),
                         const SizedBox(width: 8),
                         Text(
                           'TaskHub',
@@ -78,6 +85,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               ?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 24,
+                                color: textColor,
                               ),
                         ),
                       ],
@@ -88,6 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 48),
@@ -95,12 +104,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: _usernameController,
                       label: 'Username',
                       hint: 'yourname',
+                      isDarkMode: isDarkMode,
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
                       controller: _emailController,
                       label: 'Email',
                       hint: 'user@example.com',
+                      isDarkMode: isDarkMode,
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
@@ -108,6 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       label: 'Password',
                       hint: '**********',
                       isPassword: true,
+                      isDarkMode: isDarkMode,
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
@@ -115,9 +127,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       label: 'Confirm',
                       hint: '**********',
                       isPassword: true,
+                      isDarkMode: isDarkMode,
                     ),
                     const SizedBox(height: 32),
-                    _buildSignupButton(),
+                    _buildSignupButton(isDarkMode),
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -126,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           "Already have an account? ",
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: Colors.black,
+                                color: textColor.withOpacity(0.7),
                                 fontWeight: FontWeight.normal,
                               ),
                         ),
@@ -136,7 +149,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             'Login',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Colors.black,
+                                  color: textColor,
                                   fontWeight: FontWeight.bold,
                                   decoration: TextDecoration.underline,
                                 ),
@@ -154,13 +167,16 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildBackground() {
+  Widget _buildBackground(bool isDarkMode) {
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFFE5D5FF)),
+      color: isDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFE5D5FF),
       child: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset('assets/images/bg1.png', fit: BoxFit.cover),
+            child: Opacity(
+              opacity: isDarkMode ? 0.3 : 1.0,
+              child: Image.asset('assets/images/bg1.png', fit: BoxFit.cover),
+            ),
           ),
         ],
       ),
@@ -172,12 +188,20 @@ class _SignupScreenState extends State<SignupScreen> {
     required String label,
     required String hint,
     bool isPassword = false,
+    required bool isDarkMode,
   }) {
+    final fieldColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.white.withOpacity(0.4);
+    final hintColor = isDarkMode ? Colors.white38 : Colors.black38;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
+        color: fieldColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(
+          color: (isDarkMode ? Colors.white : Colors.black).withOpacity(0.1),
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
@@ -186,10 +210,13 @@ class _SignupScreenState extends State<SignupScreen> {
             child: TextFormField(
               controller: controller,
               obscureText: isPassword,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: const TextStyle(
-                  color: Colors.black38,
+                hintStyle: TextStyle(
+                  color: hintColor,
                   fontStyle: FontStyle.italic,
                   fontSize: 16,
                 ),
@@ -209,8 +236,8 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.black38,
+            style: TextStyle(
+              color: hintColor,
               fontSize: 16,
               fontStyle: FontStyle.italic,
             ),
@@ -220,21 +247,23 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildSignupButton() {
+  Widget _buildSignupButton(bool isDarkMode) {
     return SizedBox(
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _signup,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
+          backgroundColor: isDarkMode ? Colors.white : Colors.black,
+          foregroundColor: isDarkMode ? Colors.black : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? CircularProgressIndicator(
+                color: isDarkMode ? Colors.black : Colors.white,
+              )
             : const Text(
                 'Sign up',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

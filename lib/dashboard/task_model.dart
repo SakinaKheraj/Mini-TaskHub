@@ -1,5 +1,7 @@
+/// Our data blueprint for a single Task.
+/// It translates between the App's Dart objects and Supabase's JSON rows.
 class Task {
-  final String? id;
+  final String? id; // Unique ID from Supabase
   final String title;
   final String? description;
   final String? category;
@@ -8,7 +10,7 @@ class Task {
   final String? endTime;
   final String? date;
   final bool isCompleted;
-  final String userId;
+  final String userId; // Links the task to a specific user
   final DateTime createdAt;
 
   Task({
@@ -25,6 +27,7 @@ class Task {
     required this.createdAt,
   });
 
+  /// Factory constructor to turn a Supabase JSON map into a Task object.
   factory Task.fromJson(Map<String, dynamic> json) => Task(
     id: json['id'],
     title: json['title'],
@@ -39,6 +42,7 @@ class Task {
     createdAt: DateTime.parse(json['created_at']),
   );
 
+  /// Converts a Task object back to JSON for saving into the database.
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,

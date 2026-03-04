@@ -14,19 +14,19 @@ class AppTheme {
   static const Color categoryDaily = Color(0xFFC7A2FF); // Purple
   static const Color categoryGrocery = Color(0xFFF1D9B5); // Peach
 
-  static ThemeData get themeData {
+  static ThemeData get lightTheme {
     final baseTextTheme = GoogleFonts.outfitTextTheme();
 
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryPurple,
         primary: primaryPurple,
         onPrimary: Colors.white,
         surface: Colors.white,
       ),
-      scaffoldBackgroundColor:
-          Colors.transparent, // Always transparent for BG image
+      scaffoldBackgroundColor: Colors.transparent,
 
       textTheme: baseTextTheme.copyWith(
         displayLarge: GoogleFonts.outfit(
@@ -84,32 +84,78 @@ class AppTheme {
         ),
         hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400),
       ),
+    );
+  }
 
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.grey.shade100),
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryPurple,
+        brightness: Brightness.dark,
+        primary: primaryPurple,
+        onPrimary: Colors.white,
+        surface: const Color(0xFF121212),
+      ),
+      scaffoldBackgroundColor: Colors.transparent,
+
+      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
+          .copyWith(
+            displayLarge: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 32,
+            ),
+            titleLarge: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 22,
+            ),
+            bodyLarge: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            bodyMedium: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
+          ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryPurple,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 60),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          elevation: 0,
         ),
       ),
 
-      chipTheme: ChipThemeData(
-        backgroundColor: accentPurple,
-        selectedColor: primaryPurple,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        labelStyle: GoogleFonts.outfit(
-          color: textMain,
-          fontWeight: FontWeight.w600,
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1E1E1E),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
         ),
-        secondaryLabelStyle: GoogleFonts.outfit(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade800),
         ),
-        showCheckmark: false,
-        side: BorderSide.none,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade800),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryPurple, width: 1.5),
+        ),
+        hintStyle: GoogleFonts.outfit(color: Colors.grey.shade600),
       ),
     );
   }

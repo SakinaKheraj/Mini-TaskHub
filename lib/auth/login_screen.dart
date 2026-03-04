@@ -4,6 +4,8 @@ import 'auth_service.dart';
 import 'signup_screen.dart';
 import '../utils/validators.dart';
 
+/// The entry point for existing users.
+/// It uses a premium glassmorphic design that works with the background image.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  /// Handles the login logic by talking to the AuthService.
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -25,25 +28,28 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      // No need to navigate, AuthWrapper in main.dart handles it
+      // The AuthWrapper in main.dart will automatically swap this for the Dashboard.
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: ${e.toString()}')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${e.toString()}')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
-      backgroundColor:
-          Colors.transparent, // Background will be handled by main or Stack
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Background Gradient Image or Shapes
-          _buildBackground(),
+          _buildBackground(isDarkMode),
 
           SafeArea(
             child: SingleChildScrollView(
@@ -54,11 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(height: 10),
-                    // Logo and App Name
+                    // Branding
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const Icon(Icons.hive, size: 28, color: Colors.black),
+                        Icon(Icons.hive, size: 28, color: textColor),
                         const SizedBox(width: 8),
                         Text(
                           'TaskHub',
@@ -66,44 +72,44 @@ class _LoginScreenState extends State<LoginScreen> {
                               ?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 24,
+                                color: textColor,
                               ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 140),
 
-                    // Welcome Back !
                     Text(
                       'Welcome Back !',
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 48),
 
-                    // Email Field
                     _buildTextField(
                       controller: _emailController,
                       label: 'Email',
                       hint: 'user@example.com',
+                      isDarkMode: isDarkMode,
                     ),
                     const SizedBox(height: 20),
 
-                    // Password Field
                     _buildTextField(
                       controller: _passwordController,
                       label: 'Password',
                       hint: '**********',
                       isPassword: true,
+                      isDarkMode: isDarkMode,
                     ),
                     const SizedBox(height: 32),
 
-                    // Login Button
-                    _buildLoginButton(),
+                    _buildLoginButton(isDarkMode),
                     const SizedBox(height: 32),
 
-                    // Sign Up Link
+                    // Navigation to Signup
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -111,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           "Don't have an account? ",
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: Colors.black,
+                                color: textColor.withOpacity(0.7),
                                 fontWeight: FontWeight.normal,
                               ),
                         ),
@@ -120,18 +126,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.push(
                               context,
                               PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const SignupScreen(),
+                                pageBuilder: (context, anim, secAnim) =>
+                                    const SignupScreen(),
                                 transitionsBuilder:
-                                    (
-                                      context,
-                                      animation,
-                                      secondaryAnimation,
-                                      child,
-                                    ) {
+                                    (context, anim, secAnim, child) {
                                       return FadeTransition(
-                                        opacity: animation,
+                                        opacity: anim,
                                         child: child,
                                       );
                                     },
@@ -145,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Sign up',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Colors.black,
+                                  color: textColor,
                                   fontWeight: FontWeight.bold,
                                   decoration: TextDecoration.underline,
                                 ),
@@ -163,18 +163,17 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildBackground() {
+  Widget _buildBackground(bool isDarkMode) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFE5D5FF), // Fallback
-      ),
+      color: isDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFE5D5FF),
       child: Stack(
         children: [
-          // Assuming bg1.png is the background from the image
           Positioned.fill(
-            child: Image.asset('assets/images/bg1.png', fit: BoxFit.cover),
+            child: Opacity(
+              opacity: isDarkMode ? 0.3 : 1.0,
+              child: Image.asset('assets/images/bg1.png', fit: BoxFit.cover),
+            ),
           ),
-          // Additional overlays to match the soft gradient look if needed
         ],
       ),
     );
@@ -185,12 +184,20 @@ class _LoginScreenState extends State<LoginScreen> {
     required String label,
     required String hint,
     bool isPassword = false,
+    required bool isDarkMode,
   }) {
+    final fieldColor = isDarkMode
+        ? Colors.white.withOpacity(0.1)
+        : Colors.white.withOpacity(0.4);
+    final hintColor = isDarkMode ? Colors.white38 : Colors.black38;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
+        color: fieldColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(
+          color: (isDarkMode ? Colors.white : Colors.black).withOpacity(0.1),
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
@@ -199,10 +206,13 @@ class _LoginScreenState extends State<LoginScreen> {
             child: TextFormField(
               controller: controller,
               obscureText: isPassword,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: const TextStyle(
-                  color: Colors.black38,
+                hintStyle: TextStyle(
+                  color: hintColor,
                   fontStyle: FontStyle.italic,
                   fontSize: 16,
                 ),
@@ -221,8 +231,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.black38,
+            style: TextStyle(
+              color: hintColor,
               fontSize: 16,
               fontStyle: FontStyle.italic,
             ),
@@ -232,21 +242,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(bool isDarkMode) {
     return SizedBox(
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
+          backgroundColor: isDarkMode ? Colors.white : Colors.black,
+          foregroundColor: isDarkMode ? Colors.black : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? CircularProgressIndicator(
+                color: isDarkMode ? Colors.black : Colors.white,
+              )
             : const Text(
                 'Login',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

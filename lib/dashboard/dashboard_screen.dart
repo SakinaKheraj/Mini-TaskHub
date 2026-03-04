@@ -3,9 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_service.dart';
 import '../providers/task_provider.dart';
+import '../providers/theme_provider.dart';
 import 'task_tile.dart';
 import 'create_task_sheet.dart';
 
+/// The main dashboard where users see their tasks and category progress.
+/// It uses Supabase Realtime to keep the list updated across sessions.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -20,7 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthService>().currentUser;
       if (user != null) {
-        context.read<TaskProvider>().loadTasks(user.id);
+        context.read<TaskProvider>().initializeRealtime(user.id);
       }
     });
   }
@@ -32,8 +35,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final taskProvider = context.watch<TaskProvider>();
     final username = user?.userMetadata?['username'] ?? 'User';
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDarkMode
+        ? const Color(0xFF121212)
+        : const Color(0xFFFBFBFB);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -45,19 +53,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 24),
-                    _buildCategoryGrid(),
+                    _buildCategoryGrid(isDarkMode),
                     const SizedBox(height: 32),
                     Text(
                       "Today's Tasks",
                       style: GoogleFonts.outfit(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 16),
                     taskProvider.tasks.isEmpty
-                        ? _buildEmptyState()
+                        ? _buildEmptyState(isDarkMode)
                         : ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -73,8 +81,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     user!.id,
                                   );
                                 },
-                                onDelete: () {
-                                  taskProvider.deleteTask(task.id!, user!.id);
+                                onDelete: () async {
+                                  try {
+                                    await taskProvider.deleteTask(
+                                      task.id!,
+                                      user!.id,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Task deleted'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Error deleting task: $e',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
                                 },
                                 onEdit: () {
                                   showModalBottomSheet(
@@ -98,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(color: Color(0xFFFBFBFB)),
+        decoration: BoxDecoration(color: bgColor),
         child: ElevatedButton(
           onPressed: () {
             showModalBottomSheet(
@@ -129,7 +165,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Builds the greeting header with user's name and action buttons (Dark Mode, Logout).
   Widget _buildHeader(String username, AuthService authService) {
+    final themeProvider = context.read<ThemeProvider>();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
       child: Row(
@@ -143,7 +182,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black87,
                 ),
               ),
               Text(
@@ -157,11 +198,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           Row(
             children: [
+              // Theme Toggle button
               IconButton(
-                onPressed: () => authService.signOut(),
+                onPressed: () => themeProvider.toggleTheme(),
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Logout button
+              IconButton(
+                onPressed: () {
+                  context.read<TaskProvider>().signOut();
+                  authService.signOut();
+                },
                 icon: const Icon(Icons.logout, color: Colors.grey),
               ),
-              const SizedBox(width: 8),
             ],
           ),
         ],
@@ -169,17 +222,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildCategoryGrid() {
-    final taskProvider = context.watch<TaskProvider>();
-    final tasks = taskProvider.tasks;
+  Widget _buildCategoryGrid(bool isDarkMode) {
+    final tasks = context.watch<TaskProvider>().tasks;
 
-    int countFor(String category) {
-      if (category == 'Project') {
-        return tasks
-            .where((t) => t.category == 'Education' || t.category == 'Project')
-            .length;
-      }
-      return tasks.where((t) => t.category == category).length;
+    int countFor(String categoryLabel) {
+      final label = categoryLabel.toLowerCase().trim();
+      return tasks.where((t) {
+        final taskCat = t.category?.toLowerCase().trim() ?? '';
+        if (label == 'project') {
+          return taskCat == 'project' || taskCat == 'education';
+        }
+        return taskCat == label;
+      }).length;
     }
 
     return GridView.count(
@@ -193,26 +247,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _buildCategoryCard(
           "Project",
           countFor("Project").toString(),
-          const Color(0xFFC0D1FF),
+          isDarkMode ? const Color(0xFF2D3B5E) : const Color(0xFFC0D1FF),
           Icons.folder_outlined,
+          isDarkMode,
         ),
         _buildCategoryCard(
           "Work",
           countFor("work").toString(),
-          const Color(0xFFD1FAE5),
+          isDarkMode ? const Color(0xFF1E3A3A) : const Color(0xFFD1FAE5),
           Icons.directions_car_outlined,
+          isDarkMode,
         ),
         _buildCategoryCard(
           "Daily Tasks",
           countFor("Daily Tasks").toString(),
-          const Color(0xFFD8B4FE),
+          isDarkMode ? const Color(0xFF3B2D5E) : const Color(0xFFD8B4FE),
           Icons.fitness_center,
+          isDarkMode,
         ),
         _buildCategoryCard(
           "Groceries",
           countFor("Groceries").toString(),
-          const Color(0xFFFDE68A),
+          isDarkMode ? const Color(0xFF4A412A) : const Color(0xFFFDE68A),
           Icons.shopping_bag_outlined,
+          isDarkMode,
         ),
       ],
     );
@@ -223,6 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String count,
     Color color,
     IconData icon,
+    bool isDarkMode,
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -237,10 +296,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
+              color: isDarkMode
+                  ? Colors.white10
+                  : Colors.white.withOpacity(0.8),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(
+              icon,
+              color: isDarkMode ? Colors.white : color,
+              size: 18,
+            ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -250,7 +315,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               Text(
@@ -258,7 +323,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ],
@@ -268,18 +333,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDarkMode) {
     return Center(
       child: Column(
         children: [
           const SizedBox(height: 40),
-          Icon(Icons.task_alt, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.task_alt,
+            size: 64,
+            color: isDarkMode ? Colors.white10 : Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
             "No tasks for today",
             style: GoogleFonts.outfit(
               fontSize: 16,
-              color: Colors.grey.shade500,
+              color: isDarkMode ? Colors.white38 : Colors.grey.shade500,
             ),
           ),
         ],

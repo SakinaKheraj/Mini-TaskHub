@@ -1,16 +1,30 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/task_model.dart';
+import 'package:mini_taskhub/dashboard/task_model.dart';
 
+/// This service handles the bridge between our app and the Supabase database.
+/// It takes care of raw SQL-like operations and converts them to Task objects.
 class SupabaseService {
   final supabase = Supabase.instance.client;
 
+  /// Fetches a one-time list of tasks. Used as a fallback or initial load.
   Future<List<Task>> getTasks(String userId) async {
     final response = await supabase
         .from('tasks')
         .select()
         .eq('user_id', userId)
         .order('created_at', ascending: false);
-    return response.map((json) => Task.fromJson(json)).toList();
+    return response.map<Task>((json) => Task.fromJson(json)).toList();
+  }
+
+  /// The 'Magic' part: Returns a live stream of data.
+  /// Any change in the 'tasks' table on the server will be pushed directly here.
+  Stream<List<Task>> getTasksStream(String userId) {
+    return supabase
+        .from('tasks')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .map((data) => data.map<Task>((json) => Task.fromJson(json)).toList());
   }
 
   Future<void> createTask(

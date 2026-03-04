@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/task_model.dart';
+import 'package:mini_taskhub/dashboard/task_model.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
+/// A single row representing a task.
+/// It features swipe-to-delete, checking/unchecking, and editing.
 class TaskTile extends StatelessWidget {
   final Task task;
   final VoidCallback? onToggle;
-  final VoidCallback? onDelete;
+  final Future<void> Function()? onDelete;
   final VoidCallback? onEdit;
 
   const TaskTile({
@@ -20,16 +22,22 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Slidable(
             key: ValueKey(task.id),
+            // The left-swipe reveal for the delete action
             endActionPane: ActionPane(
               motion: const StretchMotion(),
               extentRatio: 0.25,
+              dismissible: DismissiblePane(onDismissed: () => onDelete?.call()),
               children: [
                 SlidableAction(
-                  onPressed: (_) => onDelete?.call(),
+                  onPressed: (context) {
+                    onDelete?.call();
+                  },
                   backgroundColor: Colors.red.shade50,
                   foregroundColor: Colors.red,
                   icon: Icons.delete_outline,
@@ -41,9 +49,13 @@ class TaskTile extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.grey.shade800
+                      : Colors.grey.shade200,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
@@ -82,22 +94,29 @@ class TaskTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 20),
+                  // Title and details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          task.title,
-                          style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: task.isCompleted
-                                ? Colors.grey
-                                : Colors.black87,
-                            decoration: task.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              task.title,
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: task.isCompleted
+                                    ? Colors.grey
+                                    : (isDarkMode
+                                          ? Colors.white
+                                          : Colors.black87),
+                                decoration: task.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                          ],
                         ),
                         if (task.startTime != null && task.endTime != null)
                           Text(
@@ -110,6 +129,7 @@ class TaskTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // The Edit button
                   IconButton(
                     onPressed: onEdit,
                     icon: Icon(

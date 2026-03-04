@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mini_taskhub/models/task_model.dart';
+import 'package:mini_taskhub/dashboard/task_model.dart';
 
 void main() {
   group('Task Model Tests', () {

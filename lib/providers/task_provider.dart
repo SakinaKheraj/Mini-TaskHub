@@ -1,29 +1,43 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/supabase_service.dart';
-import '../models/task_model.dart';
+import 'package:mini_taskhub/dashboard/task_model.dart';
 
+/// The brain of the app's data management.
+/// It listens to the Supabase stream and notifies the UI whenever things change.
 class TaskProvider with ChangeNotifier {
   final SupabaseService _supabaseService = SupabaseService();
   List<Task> _tasks = [];
   bool _isLoading = false;
+  StreamSubscription<List<Task>>? _subscription;
 
   List<Task> get tasks => _tasks;
   bool get isLoading => _isLoading;
 
-  Future<void> loadTasks(String userId) async {
+  /// Starts the engine by listening to live data for a specific user.
+  void initializeRealtime(String userId) {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      _tasks = await _supabaseService.getTasks(userId);
-    } catch (e) {
-      debugPrint('Error loading tasks: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    // Kill any old connections before starting a new one
+    _subscription?.cancel();
+    _subscription = _supabaseService
+        .getTasksStream(userId)
+        .listen(
+          (updatedTasks) {
+            _tasks = updatedTasks;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (error) {
+            debugPrint('Realtime Error: $error');
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
+  /// Tells Supabase to create a task. The stream will handle the UI update automatically.
   Future<void> addTask(
     String userId,
     String title, {
@@ -44,12 +58,20 @@ class TaskProvider with ChangeNotifier {
       endTime: endTime,
       date: date,
     );
-    await loadTasks(userId);
   }
 
   Future<void> deleteTask(String taskId, String userId) async {
-    await _supabaseService.deleteTask(taskId);
-    await loadTasks(userId);
+    // Optimistic UI: Remove it locally first so the user sees it disappear instantly
+    _tasks.removeWhere((task) => task.id == taskId);
+    notifyListeners();
+
+    try {
+      await _supabaseService.deleteTask(taskId);
+    } catch (e) {
+      // If it fails, the next stream update will restore it, or we could handle it here.
+      debugPrint('Delete failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateTask(
@@ -73,7 +95,6 @@ class TaskProvider with ChangeNotifier {
       endTime: endTime,
       date: date,
     );
-    await loadTasks(userId);
   }
 
   Future<void> toggleTask(
@@ -82,6 +103,19 @@ class TaskProvider with ChangeNotifier {
     String userId,
   ) async {
     await _supabaseService.toggleTask(taskId, isCompleted);
-    await loadTasks(userId);
+  }
+
+  /// Clean up when logging out or closing the app.
+  void signOut() {
+    _subscription?.cancel();
+    _subscription = null;
+    _tasks = [];
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

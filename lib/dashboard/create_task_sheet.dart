@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../auth/auth_service.dart';
 import '../providers/task_provider.dart';
-import '../models/task_model.dart';
+import 'package:mini_taskhub/dashboard/task_model.dart';
 
+/// The sliding panel for creating or editing tasks.
+/// It uses a local state to manage the form before saving to Supabase.
 class CreateTaskSheet extends StatefulWidget {
   final Task? task;
   const CreateTaskSheet({super.key, this.task});
@@ -48,6 +50,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   @override
   void initState() {
     super.initState();
+    // Pre-fill fields if we are editing an existing task
     _nameController = TextEditingController(text: widget.task?.title ?? '');
     _descriptionController = TextEditingController(
       text: widget.task?.description ?? '',
@@ -64,17 +67,20 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.task != null;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF121212) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
+          // Drag handle
           Center(
             child: Container(
               width: 40,
@@ -100,6 +106,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(width: 48), // Spacer for centering
             ],
           ).animate().fadeIn().slideY(begin: 0.2),
           Expanded(
@@ -110,20 +117,21 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 32),
-                          _buildLabel("Task Name"),
+                          _buildLabel("Task Name", isDarkMode),
                           const SizedBox(height: 12),
                           _buildTextField(
                             _nameController,
                             "Enter task name...",
+                            isDarkMode,
                           ),
                           const SizedBox(height: 24),
-                          _buildLabel("Category"),
+                          _buildLabel("Category", isDarkMode),
                           const SizedBox(height: 12),
-                          _buildCategoryChips(),
+                          _buildCategoryChips(isDarkMode),
                           const SizedBox(height: 24),
-                          _buildLabel("Date & Time"),
+                          _buildLabel("Date & Time", isDarkMode),
                           const SizedBox(height: 12),
-                          _buildDatePicker(),
+                          _buildDatePicker(isDarkMode),
                           const SizedBox(height: 24),
                           Row(
                             children: [
@@ -131,12 +139,13 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildLabel("Start time"),
+                                    _buildLabel("Start time", isDarkMode),
                                     const SizedBox(height: 12),
                                     _buildTimeDropdown(
                                       _startTime,
                                       (val) =>
                                           setState(() => _startTime = val!),
+                                      isDarkMode,
                                     ),
                                   ],
                                 ),
@@ -146,11 +155,12 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildLabel("End time"),
+                                    _buildLabel("End time", isDarkMode),
                                     const SizedBox(height: 12),
                                     _buildTimeDropdown(
                                       _endTime,
                                       (val) => setState(() => _endTime = val!),
+                                      isDarkMode,
                                     ),
                                   ],
                                 ),
@@ -158,15 +168,16 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          _buildLabel("Priority"),
+                          _buildLabel("Priority", isDarkMode),
                           const SizedBox(height: 12),
-                          _buildPriorityChips(),
+                          _buildPriorityChips(isDarkMode),
                           const SizedBox(height: 24),
-                          _buildLabel("Description"),
+                          _buildLabel("Description", isDarkMode),
                           const SizedBox(height: 12),
                           _buildTextField(
                             _descriptionController,
                             "Enter description...",
+                            isDarkMode,
                             maxLines: 4,
                           ),
                           const SizedBox(height: 40),
@@ -184,34 +195,38 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, bool isDarkMode) {
     return Text(
       text,
       style: GoogleFonts.outfit(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: Colors.black,
+        color: isDarkMode ? Colors.white : Colors.black,
       ),
     );
   }
 
   Widget _buildTextField(
     TextEditingController controller,
-    String hint, {
+    String hint,
+    bool isDarkMode, {
     int maxLines = 1,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400),
+        hintStyle: GoogleFonts.outfit(color: Colors.grey.shade500),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         contentPadding: const EdgeInsets.all(20),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -221,7 +236,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     );
   }
 
-  Widget _buildCategoryChips() {
+  Widget _buildCategoryChips(bool isDarkMode) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -232,11 +247,15 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           selected: isSelected,
           onSelected: (val) => setState(() => _selectedCategory = cat),
           labelStyle: GoogleFonts.outfit(
-            color: isSelected ? Colors.white : Colors.black87,
+            color: isSelected
+                ? Colors.white
+                : (isDarkMode ? Colors.white70 : Colors.black87),
             fontWeight: FontWeight.w500,
           ),
           selectedColor: const Color(0xFF8B5CF6),
-          backgroundColor: const Color(0xFFEDE9FE),
+          backgroundColor: isDarkMode
+              ? const Color(0xFF2D2D2D)
+              : const Color(0xFFEDE9FE),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -248,7 +267,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     );
   }
 
-  Widget _buildPriorityChips() {
+  Widget _buildPriorityChips(bool isDarkMode) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -259,11 +278,15 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           selected: isSelected,
           onSelected: (val) => setState(() => _selectedPriority = prio),
           labelStyle: GoogleFonts.outfit(
-            color: isSelected ? Colors.white : Colors.black87,
+            color: isSelected
+                ? Colors.white
+                : (isDarkMode ? Colors.white70 : Colors.black87),
             fontWeight: FontWeight.w500,
           ),
           selectedColor: const Color(0xFF8B5CF6),
-          backgroundColor: const Color(0xFFEDE9FE),
+          backgroundColor: isDarkMode
+              ? const Color(0xFF2D2D2D)
+              : const Color(0xFFEDE9FE),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -275,7 +298,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     );
   }
 
-  Widget _buildDatePicker() {
+  Widget _buildDatePicker(bool isDarkMode) {
     return InkWell(
       onTap: () async {
         final date = await showDatePicker(
@@ -290,14 +313,19 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(
+            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               "${_selectedDate.day} ${_getMonth(_selectedDate.month)}, ${_getWeekday(_selectedDate.weekday)}",
-              style: GoogleFonts.outfit(fontSize: 16, color: Colors.black87),
+              style: GoogleFonts.outfit(
+                fontSize: 16,
+                color: isDarkMode ? Colors.white70 : Colors.black87,
+              ),
             ),
             const Icon(
               Icons.calendar_today_outlined,
@@ -310,12 +338,18 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     );
   }
 
-  Widget _buildTimeDropdown(String value, ValueChanged<String?> onChanged) {
+  Widget _buildTimeDropdown(
+    String value,
+    ValueChanged<String?> onChanged,
+    bool isDarkMode,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -325,7 +359,11 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
               .map((t) => DropdownMenuItem(value: t, child: Text(t)))
               .toList(),
           onChanged: onChanged,
-          style: GoogleFonts.outfit(fontSize: 16, color: Colors.black87),
+          style: GoogleFonts.outfit(
+            fontSize: 16,
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+          ),
+          dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8B5CF6)),
         ),
       ),
@@ -369,7 +407,6 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
       if (user != null) {
         final taskProvider = context.read<TaskProvider>();
         if (widget.task != null) {
-          // Edit existing task
           await taskProvider.updateTask(
             widget.task!.id!,
             user.id,
@@ -382,7 +419,6 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             date: _selectedDate.toIso8601String(),
           );
         } else {
-          // Add new task
           await taskProvider.addTask(
             user.id,
             _nameController.text,
@@ -397,11 +433,10 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
         if (mounted) Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

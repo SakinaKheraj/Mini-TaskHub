@@ -5,30 +5,23 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/theme.dart';
 import 'auth/auth_service.dart';
 import 'providers/task_provider.dart';
+import 'providers/theme_provider.dart';
 import 'auth/login_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load environment variables for Supabase configuration
   await dotenv.load(fileName: ".env");
 
   final String url = dotenv.env['SUPABASE_URL']!.trim();
   final String anonKey = dotenv.env['SUPABASE_ANON_KEY']!.trim();
 
+  // Initialize Supabase with the loaded credentials
   await Supabase.initialize(url: url, anonKey: anonKey);
 
-  // TEST CONNECTION
-  try {
-    final response = await Supabase.instance.client
-        .from('tasks')
-        .select('count');
-    debugPrint(" Supabase connected: $response");
-  } catch (e) {
-    debugPrint(" Supabase test failed: $e");
-  }
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -40,17 +33,26 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'Mini TaskHub',
-        theme: AppTheme.themeData,
-        home: AuthWrapper(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'Mini TaskHub',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: const AuthWrapper(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }
 }
 
+/// A simple wrapper that listens to auth state changes.
+/// If a user is logged in, it shows the Dashboard; otherwise, the Login screen.
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -62,7 +64,6 @@ class AuthWrapper extends StatelessWidget {
           stream: authService.authStateChanges,
           initialData: authService.currentUser,
           builder: (context, snapshot) {
-            // No need for waiting state if we have initialData
             return snapshot.data != null
                 ? const DashboardScreen()
                 : const LoginScreen();
