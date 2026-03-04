@@ -39,6 +39,30 @@ class SupabaseService {
     await supabase.from('tasks').delete().eq('id', taskId);
   }
 
+  Future<void> updateTask(
+    String taskId, {
+    String? title,
+    String? description,
+    String? category,
+    String? priority,
+    String? startTime,
+    String? endTime,
+    String? date,
+  }) async {
+    await supabase
+        .from('tasks')
+        .update({
+          if (title != null) 'title': title,
+          if (description != null) 'description': description,
+          if (category != null) 'category': category,
+          if (priority != null) 'priority': priority,
+          if (startTime != null) 'start_time': startTime,
+          if (endTime != null) 'end_time': endTime,
+          if (date != null) 'date': date,
+        })
+        .eq('id', taskId);
+  }
+
   Future<void> toggleTask(String taskId, bool isCompleted) async {
     await supabase
         .from('tasks')

@@ -76,6 +76,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onDelete: () {
                                   taskProvider.deleteTask(task.id!, user!.id);
                                 },
+                                onEdit: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) =>
+                                        CreateTaskSheet(task: task),
+                                  );
+                                },
                               );
                             },
                           ),
@@ -161,6 +170,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildCategoryGrid() {
+    final taskProvider = context.watch<TaskProvider>();
+    final tasks = taskProvider.tasks;
+
+    int countFor(String category) {
+      if (category == 'Project') {
+        return tasks
+            .where((t) => t.category == 'Education' || t.category == 'Project')
+            .length;
+      }
+      return tasks.where((t) => t.category == category).length;
+    }
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -171,25 +192,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         _buildCategoryCard(
           "Project",
-          "5",
+          countFor("Project").toString(),
           const Color(0xFFC0D1FF),
           Icons.folder_outlined,
         ),
         _buildCategoryCard(
           "Work",
-          "3",
+          countFor("work").toString(),
           const Color(0xFFD1FAE5),
           Icons.directions_car_outlined,
         ),
         _buildCategoryCard(
           "Daily Tasks",
-          "2",
+          countFor("Daily Tasks").toString(),
           const Color(0xFFD8B4FE),
           Icons.fitness_center,
         ),
         _buildCategoryCard(
           "Groceries",
-          "7",
+          countFor("Groceries").toString(),
           const Color(0xFFFDE68A),
           Icons.shopping_bag_outlined,
         ),

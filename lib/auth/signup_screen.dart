@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'auth_service.dart';
+import '../utils/validators.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -197,8 +198,13 @@ class _SignupScreenState extends State<SignupScreen> {
                 focusedBorder: InputBorder.none,
                 filled: false,
               ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Field required' : null,
+              validator: (value) {
+                if (label == 'Email') return Validators.validateEmail(value);
+                if (label == 'Password' || label == 'Confirm') {
+                  return Validators.validatePassword(value);
+                }
+                return Validators.validateRequired(value, label);
+              },
             ),
           ),
           Text(

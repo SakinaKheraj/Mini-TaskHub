@@ -40,6 +40,7 @@ class Task {
   );
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'title': title,
     'description': description,
     'category': category,
@@ -49,5 +50,6 @@ class Task {
     'date': date,
     'is_completed': isCompleted,
     'user_id': userId,
+    'created_at': createdAt.toIso8601String(),
   };
 }

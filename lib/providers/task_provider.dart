@@ -52,6 +52,30 @@ class TaskProvider with ChangeNotifier {
     await loadTasks(userId);
   }
 
+  Future<void> updateTask(
+    String taskId,
+    String userId, {
+    String? title,
+    String? description,
+    String? category,
+    String? priority,
+    String? startTime,
+    String? endTime,
+    String? date,
+  }) async {
+    await _supabaseService.updateTask(
+      taskId,
+      title: title,
+      description: description,
+      category: category,
+      priority: priority,
+      startTime: startTime,
+      endTime: endTime,
+      date: date,
+    );
+    await loadTasks(userId);
+  }
+
   Future<void> toggleTask(
     String taskId,
     bool isCompleted,
